@@ -1,0 +1,72 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: ca46d942b9fafda4f5236de33697e94ec4336d4f9965bdd4280dca82a2519cb1
+
+name:           hs-google-signin
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/jkaye2012/hs-google-signin#readme>
+homepage:       https://github.com/jkaye2012/hs-google-signin#readme
+bug-reports:    https://github.com/jkaye2012/hs-google-signin/issues
+author:         Jordan Kaye
+maintainer:     jordan.kaye2@gmail.com
+copyright:      2020 Jordan Kaye
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/jkaye2012/hs-google-signin
+
+library
+  exposed-modules:
+      Lib
+      Web.Google.Certificates
+  other-modules:
+      Paths_hs_google_signin
+  hs-source-dirs:
+      src
+  build-depends:
+      aeson >=1.4 && <2
+    , base >=4.7 && <5
+    , http-client <1
+    , jwt >=0.10 && <1
+  default-language: Haskell2010
+
+executable hs-google-signin-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_hs_google_signin
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson >=1.4 && <2
+    , base >=4.7 && <5
+    , hs-google-signin
+    , http-client <1
+    , jwt >=0.10 && <1
+  default-language: Haskell2010
+
+test-suite hs-google-signin-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_hs_google_signin
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson >=1.4 && <2
+    , base >=4.7 && <5
+    , hs-google-signin
+    , http-client <1
+    , jwt >=0.10 && <1
+  default-language: Haskell2010
