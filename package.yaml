@@ -21,9 +21,14 @@ description:         Please see the README on GitHub at <https://github.com/jkay
 
 dependencies:
 - base >= 4.7 && < 5
-- aeson >= 1.4 && < 2
-- http-client < 1
+- bytestring >= 0.10.10.0 && < 1
+- containers >= 0.4 && < 1
+- http-conduit >= 2.3 && < 3
+- http-types >= 0.12.0 && < 1
 - jwt >= 0.10 && < 1
+- text >= 1.2.4.0 && < 2
+- time >= 1.9.3 && < 2
+- transformers >= 0.4.2.0 && < 1
 
 library:
   source-dirs: src
@@ -48,4 +53,5 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - hspec
     - hs-google-signin
