@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3f28a35ebb182f1c6d3d838e79afd2148d28867e6088ce84316cea008e8f500f
+-- hash: 1a544913667e6190232e6371bca52e362b72f6a6167b90d3aa6495ddb4ea96e1
 
 name:           hs-google-signin
 version:        0.1.0.0
@@ -69,6 +69,7 @@ test-suite hs-google-signin-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      GoogleCertSpec
       Paths_hs_google_signin
   hs-source-dirs:
       test
