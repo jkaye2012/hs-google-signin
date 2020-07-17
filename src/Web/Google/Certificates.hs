@@ -47,18 +47,22 @@ mkGoogleCerts pem exp =
   where
     parsed = Time.parseTimeM True Time.defaultTimeLocale "%a, %d %b %Y %H:%M:%S %Z" exp
 
-parseResponse :: HTTP.Response (Either HTTP.JSONException PemCerts) -> Either CertificateError GoogleCerts
-parseResponse resp =
-    case (HTTP.getResponseStatusCode resp, HTTP.getResponseBody resp, HTTP.getResponseHeader Header.hExpires resp) of
-      (200, Right certs, exp : []) -> mkGoogleCerts certs (C.unpack exp)
+parseResponse :: Int -> (Either HTTP.JSONException PemCerts) -> [String] -> Either CertificateError GoogleCerts
+parseResponse code body headers =
+    case (code, body, headers) of
+      (200, Right certs, exp : []) -> mkGoogleCerts certs exp
       (200, Left exc, _)           -> Left (ParsingError exc)
       (200, _, _)                  -> Left MissingExpiry
       (status, _, _)               -> Left (NetworkError status)
 
+parseResponse' :: HTTP.Response (Either HTTP.JSONException PemCerts) -> Either CertificateError GoogleCerts
+parseResponse' resp =
+    parseResponse (HTTP.getResponseStatusCode resp) (HTTP.getResponseBody resp) $ fmap C.unpack (HTTP.getResponseHeader Header.hExpires resp)
+
 rawCertificates :: (MonadIO m) => m (HTTP.Response (Either HTTP.JSONException PemCerts))
-rawCertificates = HTTP.httpJSONEither (HTTP.parseRequest_ "https://www.googleapis.com/oauth2/v1/certs")
+rawCertificates = HTTP.httpJSONEither "https://www.googleapis.com/oauth2/v1/certs"
 
 googleCertificates :: (MonadIO m) => m (Either CertificateError GoogleCerts)
 googleCertificates = do
   resp <- rawCertificates
-  return (parseResponse resp)
+  return (parseResponse' resp)
