@@ -6,10 +6,10 @@ module Web.Google.Signin
   (
     V.UnverifiedToken
   , V.VerifiedToken
-  , initialState
   , SigninResult(..)
   , SigninT
   , MonadSignin(..)
+  , initialState
   , tokenVerifier
   , C.CertificateError(..)
   , V.VerificationError(..)
@@ -20,7 +20,6 @@ module Web.Google.Signin
 import           Control.Monad.State
 import           Data.Either.Combinators (mapLeft)
 import           Data.IORef
-import qualified Data.Text               as T
 import qualified Data.Time               as Time
 import qualified Web.Google.Certificates as C
 import qualified Web.Google.Validation   as V
@@ -34,16 +33,13 @@ data SigninState = NewSigninState
                  | HasError C.CertificateError
                  deriving (Eq, Show)
 
-initialState :: SigninState
-initialState = NewSigninState
-
 type StateResult = Either C.CertificateError C.PemCerts
 
 type SigninResult = Either SigninError V.VerifiedToken
 
 type SigninT m = StateT SigninState m
 
-runSigninIO :: SigninState -> StateT SigninState IO (StateResult, SigninState)
+runSigninIO :: (MonadIO m) => SigninState -> StateT SigninState m (StateResult, SigninState)
 runSigninIO s = case s of
   NewSigninState -> tryDownloadCerts
   (HasError _)   -> tryDownloadCerts
@@ -60,7 +56,7 @@ runSigninIO s = case s of
         then return (Right pem, HasCerts c)
         else tryDownloadCerts
 
-signinState :: SigninT IO StateResult
+signinState :: (MonadIO m) => SigninT m StateResult
 signinState = do
   s <- get
   (a, s) <- runSigninIO s
@@ -84,6 +80,9 @@ instance MonadRef IO where
   newRef = newIORef
   writeRef = atomicWriteIORef
   readRef = readIORef
+
+initialState :: SigninState
+initialState = NewSigninState
 
 tokenVerifier :: (MonadRef m, MonadSignin m) => m (V.UnverifiedToken -> m SigninResult)
 tokenVerifier = do
