@@ -8,14 +8,17 @@ module Web.Google.Certificates
   , PemCerts
   , Expiry
   , GoogleCerts(..)
+  , pemCerts
+  , expiry
   , CertificateError(..)
   , mkGoogleCerts
   , parseResponse
   ) where
 
-import           Control.Monad.IO.Class    (MonadIO)
+import           Control.Monad.IO.Class    (MonadIO, liftIO)
 import qualified Data.ByteString           as BS
 import qualified Data.ByteString.Char8     as C
+import           Data.Either.Combinators   (maybeToRight)
 import qualified Data.Map                  as Map
 import qualified Data.Text                 as T
 import qualified Data.Time                 as Time
@@ -32,6 +35,12 @@ type Expiry = Time.UTCTime
 data GoogleCerts = GoogleCerts PemCerts Expiry
                    deriving (Show, Eq)
 
+pemCerts :: GoogleCerts -> PemCerts
+pemCerts (GoogleCerts pem _) = pem
+
+expiry :: GoogleCerts -> Expiry
+expiry (GoogleCerts _ exp) = exp
+
 data CertificateError = NetworkError Int
                       | ParsingError HTTP.JSONException
                       | MalformedCerts
@@ -46,14 +55,8 @@ instance Eq CertificateError where
   MissingExpiry == MissingExpiry = True
   _ == _ = False
 
-
 parseRawCerts :: RawCerts -> PemCerts
 parseRawCerts = fmap JWT.hmacSecret
-
-
-maybeToRight :: a -> Maybe b -> Either a b
-maybeToRight d Nothing  = Left d
-maybeToRight _ (Just v) = Right v
 
 mkGoogleCerts :: RawCerts -> String -> Either CertificateError GoogleCerts
 mkGoogleCerts c e = do
@@ -80,5 +83,6 @@ rawCertificates = HTTP.httpJSONEither "https://www.googleapis.com/oauth2/v1/cert
 
 googleCertificates :: (MonadIO m) => m (Either CertificateError GoogleCerts)
 googleCertificates = do
+  liftIO $ putStrLn "Downloading certificates"
   resp <- rawCertificates
   return (parseResponse' resp)

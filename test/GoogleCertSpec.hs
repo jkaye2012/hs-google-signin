@@ -37,10 +37,6 @@ spec = do
         let cert = C.mkGoogleCerts pem "Wed, 15 Jul 2020 09:09:57 GMT"
         resp `shouldBe` cert
 
-    context "with json exception" $ do
-      it "returns a parsing error" $ do
-        pending
-
     context "without expected headers" $ do
       it "returns a missing expiry error" $ do
         let resp = C.parseResponse 200 (Right $ Map.fromList []) []

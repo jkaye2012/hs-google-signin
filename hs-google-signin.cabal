@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d6f86b5f72433d3e89647bcaac23369f320764a94f25429899dd0c24277d8858
+-- hash: c3c61314261a5ca5c0a54231bbe0a5df755c3c11c7085ef372ffc5316968a1d8
 
 name:           hs-google-signin
 version:        0.1.0.0
@@ -29,6 +29,7 @@ library
   exposed-modules:
       Lib
       Web.Google.Certificates
+      Web.Google.Signin
       Web.Google.Validation
   other-modules:
       Paths_hs_google_signin
@@ -38,6 +39,7 @@ library
       base >=4.7 && <5
     , bytestring >=0.10.10.0 && <1
     , containers >=0.4 && <1
+    , either >=5.0.1.1 && <6
     , http-conduit >=2.3 && <3
     , http-types >=0.12.0 && <1
     , jwt >=0.10 && <1
@@ -58,6 +60,7 @@ executable hs-google-signin-exe
       base >=4.7 && <5
     , bytestring >=0.10.10.0 && <1
     , containers >=0.4 && <1
+    , either >=5.0.1.1 && <6
     , hs-google-signin
     , http-conduit >=2.3 && <3
     , http-types >=0.12.0 && <1
@@ -81,6 +84,7 @@ test-suite hs-google-signin-test
       base >=4.7 && <5
     , bytestring >=0.10.10.0 && <1
     , containers >=0.4 && <1
+    , either >=5.0.1.1 && <6
     , hs-google-signin
     , hspec
     , http-conduit >=2.3 && <3
