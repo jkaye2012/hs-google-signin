@@ -75,11 +75,21 @@ instance MonadSignin IO where
     (a, s) <- runStateT signinState state
     return $ (mapLeft CertificateError a >>= mapLeft VerificationError . flip V.verifyIdToken t, s)
 
-tokenVerifier :: IO (V.UnverifiedToken -> IO SigninResult)
+class (Monad m) => MonadRef m where
+  newRef :: a -> m (IORef a)
+  writeRef :: IORef a -> a -> m ()
+  readRef :: IORef a -> m a
+
+instance MonadRef IO where
+  newRef = newIORef
+  writeRef = atomicWriteIORef
+  readRef = readIORef
+
+tokenVerifier :: (MonadRef m, MonadSignin m) => m (V.UnverifiedToken -> m SigninResult)
 tokenVerifier = do
-  ref <- newIORef initialState
+  ref <- newRef initialState
   return $ \t -> do
-    s <- readIORef ref
+    s <- readRef ref
     (a, s) <- verifyToken s t
-    writeIORef ref s
+    writeRef ref s
     return a
