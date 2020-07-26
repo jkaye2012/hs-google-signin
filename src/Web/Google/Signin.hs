@@ -8,9 +8,8 @@ module Web.Google.Signin
   , V.VerifiedToken
   , SigninResult(..)
   , SigninT
-  , MonadSignin(..)
   , initialState
-  , tokenVerifier
+  , signin
   , C.CertificateError(..)
   , V.VerificationError(..)
   , SigninError(..)
@@ -39,7 +38,7 @@ type SigninResult = Either SigninError V.VerifiedToken
 
 type SigninT m = StateT SigninState m
 
-runSigninIO :: (MonadIO m) => SigninState -> StateT SigninState m (StateResult, SigninState)
+runSigninIO :: (MonadIO m) => SigninState -> m (StateResult, SigninState)
 runSigninIO s = case s of
   NewSigninState -> tryDownloadCerts
   (HasError _)   -> tryDownloadCerts
@@ -56,39 +55,12 @@ runSigninIO s = case s of
         then return (Right pem, HasCerts c)
         else tryDownloadCerts
 
-signinState :: (MonadIO m) => SigninT m StateResult
-signinState = do
+signin :: (MonadIO m) => V.UnverifiedToken -> SigninT m SigninResult
+signin t = do
   s <- get
   (a, s) <- runSigninIO s
   put s
-  return a
-
-class (Monad m) => MonadSignin m where
-  verifyToken :: SigninState -> V.UnverifiedToken -> m (SigninResult, SigninState)
-
-instance MonadSignin IO where
-  verifyToken state t = do
-    (a, s) <- runStateT signinState state
-    return $ (mapLeft CertificateError a >>= mapLeft VerificationError . flip V.verifyIdToken t, s)
-
-class (Monad m) => MonadRef m where
-  newRef :: a -> m (IORef a)
-  writeRef :: IORef a -> a -> m ()
-  readRef :: IORef a -> m a
-
-instance MonadRef IO where
-  newRef = newIORef
-  writeRef = atomicWriteIORef
-  readRef = readIORef
+  return $ mapLeft CertificateError a >>= mapLeft VerificationError . flip V.verifyIdToken t
 
 initialState :: SigninState
 initialState = NewSigninState
-
-tokenVerifier :: (MonadRef m, MonadSignin m) => m (V.UnverifiedToken -> m SigninResult)
-tokenVerifier = do
-  ref <- newRef initialState
-  return $ \t -> do
-    s <- readRef ref
-    (a, s) <- verifyToken s t
-    writeRef ref s
-    return a
