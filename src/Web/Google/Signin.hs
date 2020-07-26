@@ -1,15 +1,15 @@
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE TypeSynonymInstances   #-}
-
 module Web.Google.Signin
   (
-    V.UnverifiedToken
+    -- * Entrypoints
+    initialState
+  , signin
+    -- * Data types
+  , V.UnverifiedToken
   , V.VerifiedToken
+  , SigninState
   , SigninResult(..)
   , SigninT
-  , initialState
-  , signin
+  -- * Error types
   , C.CertificateError(..)
   , V.VerificationError(..)
   , SigninError(..)
@@ -18,24 +18,36 @@ module Web.Google.Signin
 
 import           Control.Monad.State
 import           Data.Either.Combinators (mapLeft)
-import           Data.IORef
 import qualified Data.Time               as Time
 import qualified Web.Google.Certificates as C
 import qualified Web.Google.Validation   as V
 
-data SigninError = CertificateError C.CertificateError
-                  | VerificationError V.VerificationError
-                  deriving (Eq, Show)
+-- | Errors that can result from a signin identification request.
+data SigninError =
+  -- | Failure to download or parse Google's HMAC certificates.
+  -- Without valid certificates, identity verification cannot be performed.
+  -- This is most likely to be a temporary technical error that will usually resolve itself.
+  CertificateError C.CertificateError
+  -- | Failure to verify an identity token against a valid certificate.
+  -- Generally, this error indicates an issue with the end user.
+  | VerificationError V.VerificationError
+  deriving (Eq, Show)
 
-data SigninState = NewSigninState
-                 | HasCerts C.GoogleCerts
-                 | HasError C.CertificateError
-                 deriving (Eq, Show)
+-- | Internal state for signin requests.
+-- Google rotates the certificates required for identity validation regularly;
+-- 'SigninState' holds cached certificates as long as they are valid.
+data SigninState =
+  NewSigninState
+  | HasCerts C.GoogleCerts
+  | HasError C.CertificateError
+  deriving (Eq, Show)
 
 type StateResult = Either C.CertificateError C.PemCerts
 
+-- | The result of a single identification request.
 type SigninResult = Either SigninError V.VerifiedToken
 
+-- | The MonadState transformer in which identity verification is run.
 type SigninT m = StateT SigninState m
 
 runSigninIO :: (MonadIO m) => SigninState -> m (StateResult, SigninState)
@@ -55,6 +67,8 @@ runSigninIO s = case s of
         then return (Right pem, HasCerts c)
         else tryDownloadCerts
 
+-- | Performs a single identification request.
+-- The identification token should be received from an external Google API.
 signin :: (MonadIO m) => V.UnverifiedToken -> SigninT m SigninResult
 signin t = do
   s <- get
@@ -62,5 +76,6 @@ signin t = do
   put s
   return $ mapLeft CertificateError a >>= mapLeft VerificationError . flip V.verifyIdToken t
 
+-- | The starting 'SigninState' that can be used to run the 'SigninT' monad stack.
 initialState :: SigninState
 initialState = NewSigninState

@@ -3,16 +3,20 @@
 
 module Web.Google.Certificates
   (
+    -- * Entrypoint
     googleCertificates
+    -- * Data types
   , RawCerts
   , PemCerts
   , Expiry
   , GoogleCerts(..)
-  , pemCerts
-  , expiry
-  , CertificateError(..)
+    -- * Utility functions
   , mkGoogleCerts
   , parseResponse
+  , pemCerts
+  , expiry
+  -- * Error types
+  , CertificateError(..)
   ) where
 
 import           Control.Monad.IO.Class    (MonadIO, liftIO)
@@ -29,24 +33,39 @@ import qualified Web.JWT                   as JWT
 deriving instance Show JWT.Signer
 deriving instance Eq JWT.Signer
 
+-- | Raw certificates downloaded from Google' certificate servers.
 type RawCerts = Map.Map T.Text T.Text
+-- | Parsed HMAC certificates that can be used for identity verification.
 type PemCerts = Map.Map T.Text JWT.Signer
+-- | Tracks the expiration time of a set of 'PemCerts'
 type Expiry = Time.UTCTime
+-- | Fully parsed and validated certificates.
 data GoogleCerts = GoogleCerts PemCerts Expiry
                    deriving (Show, Eq)
 
+-- | Extract the 'PemCerts' from a set of certificates.
 pemCerts :: GoogleCerts -> PemCerts
 pemCerts (GoogleCerts pem _) = pem
 
+-- | Extract the 'Expiry' from a set of certificates.
 expiry :: GoogleCerts -> Expiry
 expiry (GoogleCerts _ exp) = exp
 
-data CertificateError = NetworkError Int
-                      | ParsingError HTTP.JSONException
-                      | MalformedCerts
-                      | MissingExpiry
-                      | MalformedExpiry String
-                      deriving (Show)
+-- | Errors that can occur while download or parsing certificates from Google's servers.
+data CertificateError =
+  -- | A connection could not be established to the certificate servers.
+  -- The contained 'Int' is the HTTP response code for the failed request.
+  NetworkError Int
+  -- | Certificates were successfully downloaded, but could not be parsed as json.
+  | ParsingError HTTP.JSONException
+  -- | Certificates were successfully downloaded and parsed, but did not contain the expected payload.
+  | MalformedCerts
+  -- | Certificates were successfully downloaded and parsed, but did not contain an expiration header.
+  | MissingExpiry
+  -- | Certificates were successfully downloaded and parsed, but the time in the expiration header could not be interpreted.
+  -- The contained 'String' is the raw value of the malformed expiration header.
+  | MalformedExpiry String
+  deriving (Show)
 
 instance Eq CertificateError where
   NetworkError l == NetworkError r = l == r
@@ -83,6 +102,5 @@ rawCertificates = HTTP.httpJSONEither "https://www.googleapis.com/oauth2/v1/cert
 
 googleCertificates :: (MonadIO m) => m (Either CertificateError GoogleCerts)
 googleCertificates = do
-  liftIO $ putStrLn "Downloading certificates"
   resp <- rawCertificates
-  return (parseResponse' resp)
+  return $ parseResponse' resp
