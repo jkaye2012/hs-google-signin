@@ -15,4 +15,4 @@ testing = do
 
 main :: IO ()
 main = do
-  evalStateT testing initialState
+  runSignin testing

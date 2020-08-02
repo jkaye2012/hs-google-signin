@@ -3,6 +3,7 @@ module Web.Google.Signin
     -- * Entrypoints
     initialState
   , signin
+  , runSignin
     -- * Data types
   , V.UnverifiedToken
   , V.VerifiedToken
@@ -79,3 +80,7 @@ signin t = do
 -- | The starting 'SigninState' that can be used to run the 'SigninT' monad stack.
 initialState :: SigninState
 initialState = NewSigninState
+
+-- | Executes a 'SigninT' provided by a user.
+runSignin :: (MonadIO m) => SigninT m a -> m a
+runSignin = flip evalStateT initialState
